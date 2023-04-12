@@ -25,4 +25,5 @@ best_tvshow <- data.frame(
   rating,
   vote
 )
+
 view(best_tvshow)
