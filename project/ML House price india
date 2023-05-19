@@ -1,0 +1,43 @@
+library(readxl)
+house_price <- read_excel("House Price India.xlsx", sheet = 1)
+
+train_test_split <- function(data, trainRation=0.7) {
+  set.seed(42)
+  n <- nrow(house_price) 
+  id <- sample(1:n, size = trainRation*n)
+  train_data <- house_price2016[id, ]
+  test_data <- house_price2016[-id, ]
+  
+  return( list(train = train_data, test = test_data))
+}
+
+# split data 70:30
+splitData <- train_test_split(house_price, 0.7)
+train_data <- splitData[[1]]
+test_data <- splitData[[2]]
+
+# train model
+library(dplyr)
+glimpse(house_price)
+
+set.seed(42)
+ctrl <- trainControl(
+  method = "cv",
+  number = 5,
+  verboseIter = TRUE
+)
+
+lm_model <- train(log(Price) ~ `living area`
+               + `number of bedrooms`
+               + `number of floors`
+               + `Built Year` 
+               + `Number of schools nearby` ,
+                  data = train_data,
+                  method = "lm",
+                  trControl = ctrl) 
+
+# score model 
+p <- predict(lm_model, newdata = test_data)
+
+# evaluate 
+rmse_metric(log(test_data$Price), p)
