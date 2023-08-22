@@ -3,13 +3,14 @@ house_price <- read_excel("House Price India.xlsx", sheet = 1)
 
 train_test_split <- function(data, trainRation=0.7) {
   set.seed(42)
-  n <- nrow(house_price) 
+  n <- nrow(data) 
   id <- sample(1:n, size = trainRation*n)
-  train_data <- house_price2016[id, ]
-  test_data <- house_price2016[-id, ]
+  train_data <- house_price[id, ]
+  test_data <- house_price[-id, ]
   
   return( list(train = train_data, test = test_data))
 }
+
 
 # split data 70:30
 splitData <- train_test_split(house_price, 0.7)
@@ -20,6 +21,8 @@ test_data <- splitData[[2]]
 library(dplyr)
 glimpse(house_price)
 
+library(caret)
+
 set.seed(42)
 ctrl <- trainControl(
   method = "cv",
@@ -28,16 +31,48 @@ ctrl <- trainControl(
 )
 
 lm_model <- train(log(Price) ~ `living area`
-               + `number of bedrooms`
-               + `number of floors`
-               + `Built Year` 
-               + `Number of schools nearby` ,
+                  + `number of bedrooms`
+                  + `number of floors`
+                  + `Built Year` 
+                  + `Number of schools nearby` ,
                   data = train_data,
                   method = "lm",
                   trControl = ctrl) 
 
+rf_model <- train(log(Price) ~ `living area`
+                  + `number of bedrooms`
+                  + `number of floors`
+                  + `Built Year` 
+                  + `Number of schools nearby` ,
+                  data = train_data,
+                  method = "rf",
+                  trControl = ctrl) 
+
+knn_model <- train(log(Price) ~ `living area`
+                  + `number of bedrooms`
+                  + `number of floors`
+                  + `Built Year` 
+                  + `Number of schools nearby` ,
+                  data = train_data,
+                  method = "knn",
+                  trControl = ctrl) 
+
+list(lm_model, rf_model, knn_model)
+
+# rf > lm > knn rquared
+# 0.5598287, 0.5537761, 0.5188504(k=9)
+
 # score model 
-p <- predict(lm_model, newdata = test_data)
+p <- predict(rf_model, newdata = test_data)
 
 # evaluate 
+rmse_metric <- function(actual, prediction) {
+  # root mean square error
+  sq_error <- (actual - prediction)**2
+  sqrt(mean(sq_error))
+}
+
 rmse_metric(log(test_data$Price), p)
+
+# rmse_test = 0.3475955
+# rmse_train = 0.5598287
